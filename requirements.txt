@@ -1,0 +1,11 @@
+streamlit
+pdfplumber
+pandas
+openpyxl
+xlsxwriter
+pymupdf
+plotly
+kaleido
+firebase-admin
+pymongo
+numpy
