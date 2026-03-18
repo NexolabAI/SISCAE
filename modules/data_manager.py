@@ -34,14 +34,31 @@ class DataManager:
         """Inicializa la conexión con Firebase Firestore."""
         try:
             if not firebase_admin._apps:
-                # Usa credenciales por defecto (ADC) o service account
-                cred = credentials.ApplicationDefault()
-                firebase_admin.initialize_app(cred, {
-                    'projectId': 'pdf2excel-bi-module'
-                })
+                # 1. Intentar cargar desde Streamlit Secrets (Nube)
+                if "firebase" in st.secrets:
+                    firebase_secrets = dict(st.secrets["firebase"])
+                    # Asegurar que los saltos de línea en la llave privada se procesen correctamente
+                    if "private_key" in firebase_secrets:
+                        firebase_secrets["private_key"] = firebase_secrets["private_key"].replace("\\n", "\n")
+                    
+                    cred = credentials.Certificate(firebase_secrets)
+                    firebase_admin.initialize_app(cred)
+                else:
+                    # 2. Local: Usa credenciales por defecto (ADC) o service account
+                    try:
+                        cred = credentials.ApplicationDefault()
+                        firebase_admin.initialize_app(cred, {
+                            'projectId': 'pdf2excel-bi-module'
+                        })
+                    except Exception:
+                        # Fallback extremo para local si existe un serviceAccount.json
+                        print("⚠️ Usando modo sin credenciales externas.")
+                        firebase_admin.initialize_app()
+            
             self.db = firestore.client()
         except Exception as e:
             self.db = None
+            st.error(f"⚠️ Error en Firebase: {e}")
             print(f"⚠️ Firebase no disponible (modo offline): {e}")
 
     # ─── CARGA DE ARCHIVOS ─────────────────────────────────────
